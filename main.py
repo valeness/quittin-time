@@ -10,6 +10,7 @@ gtk.gdk.threads_init()
 
 hellon = 0
 counter = 0
+running = True
 
 class HelloWorld(gtk.Window):
 
@@ -21,13 +22,16 @@ class HelloWorld(gtk.Window):
 		self.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(6400, 6400, 6440))
 		self.set_position(gtk.WIN_POS_CENTER)
 		#self.set_border_width(20)
-
+		
 		vbox = gtk.VBox(False, 2)
 
 		mb = gtk.MenuBar()
 		filemenu = gtk.Menu()
 		filem = gtk.MenuItem("File")
 		filem.set_submenu(filemenu)
+		exit = gtk.MenuItem("Exit")
+		exit.connect("activate", gtk.main_quit)
+		filemenu.append(exit)
 		mb.append(filem)
 
 		vbox.pack_start(mb, False, False, 0)
@@ -46,7 +50,7 @@ class HelloWorld(gtk.Window):
 
 		vbox.pack_end(table, True, True, 0)
 
-		self.connect("destroy", gtk.main_quit)
+		self.connect("destroy", self.destroy)
 
 		button.connect("toggled", self.timer)
 
@@ -64,19 +68,23 @@ class HelloWorld(gtk.Window):
 	def timer(self, widget):
 		if widget.get_active():
 			self.s = time.time()
+			global running
+			running = True
 			threading.Thread(target = self.update).start()
 			widget.set_label("Stop")
 		else:
 			widget.set_label("Start")
 
 	def update(self):
+		global running
 		i = 0
-		while 1:
+		while running:
 			time.sleep(0.01)
 			gobject.idle_add(self.change)
 			#print i
 			i = i + 1
 			if self.button.get_active() == 0:
+				running = False
 				break
 
 	def change(self):
@@ -88,6 +96,8 @@ class HelloWorld(gtk.Window):
 		self.text.set_text(display)
 
 	def destroy(self, widget, data=None):
+		global running
+		running = False
 		gtk.main_quit()
 
 	def main(self):
