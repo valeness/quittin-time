@@ -8,8 +8,6 @@ import threading
 import gobject
 gtk.gdk.threads_init()
 
-hellon = 0
-counter = 0
 running = True
 
 class HelloWorld(gtk.Window):
@@ -19,10 +17,12 @@ class HelloWorld(gtk.Window):
 
 		self.set_title("Time Tracker")
 		self.set_size_request(600, 480)
-		self.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(6400, 6400, 6440))
 		self.set_position(gtk.WIN_POS_CENTER)
+		self.set_decorated(setting=False)
 		#self.set_border_width(20)
-		
+
+		scrolled_window = gtk.ScrolledWindow(hadjustment=None, vadjustment=None)
+
 		total_hours = []
 		total_minutes = []
 		total_seconds = []
@@ -32,6 +32,7 @@ class HelloWorld(gtk.Window):
 		prev_seconds = "Seconds: \n"
 
 		vbox = gtk.VBox(False, 2)
+
 
 		mb = gtk.MenuBar()
 		filemenu = gtk.Menu()
@@ -44,30 +45,45 @@ class HelloWorld(gtk.Window):
 
 		vbox.pack_start(mb, False, False, 0)
 
-		table = gtk.Table(5, 6, True)
+		table = gtk.Table(6, 6, True)
+		table2 = gtk.Table(3, 1, False)
 
 		button = gtk.ToggleButton(label = "Start")
 		button2 = Button("Test")
 
 		text = Label("Hello World")
-		text.modify_fg(gtk.STATE_NORMAL, gtk.gdk.color_parse('#FFF'))
 		prev_hours_label = Label(prev_hours)
-		prev_hours_label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.color_parse('#FFF'))
 		prev_minutes_label = Label(prev_minutes)
-		prev_minutes_label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.color_parse('#FFF'))
 		prev_seconds_label = Label(prev_seconds)
-		prev_seconds_label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.color_parse('#FFF'))
-		total = Label("Total: \n")
-		total.modify_fg(gtk.STATE_NORMAL, gtk.gdk.color_parse('#FFF'))
+		
+		prev_hours_label.set_alignment(xalign=0.5, yalign=0)
+		prev_minutes_label.set_alignment(xalign=0.5, yalign=0)
+		prev_seconds_label.set_alignment(xalign=0.5, yalign=0)
+
+		total_seconds_label = Label("Total Seconds \n 0")
+		total_minutes_label = Label("Total Minutes \n 0")
+		total_hours_label = Label("Total Hours \n 0")
 
 		table.attach(button, 0, 3, 1, 2)
 		table.attach(text, 0, 3, 0, 1)
-		table.attach(prev_hours_label, 0, 1, 2, 6)
-		table.attach(prev_minutes_label, 1, 2, 2, 6)
-		table.attach(prev_seconds_label, 2, 3, 2, 6)
-		table.attach(total, 3, 4, 2, 6)
+		
+		#table.attach(prev_hours_label, 0, 1, 2, 3)
+		#table.attach(prev_minutes_label, 1, 2, 2, 3)
+		#table.attach(prev_seconds_label, 2, 3, 2, 3)
+		
+		table2.attach(prev_hours_label, 0, 1, 0, 1)
+		table2.attach(prev_minutes_label, 1, 2, 0, 1)
+		table2.attach(prev_seconds_label, 2, 3, 0, 1)
+		scrolled_window.add_with_viewport(table2)
 
-		vbox.pack_end(table, True, True, 0)
+		table.attach(scrolled_window, 0, 3, 2, 6)
+
+		table.attach(total_seconds_label, 5, 6, 2, 3)
+		table.attach(total_minutes_label, 4, 5, 2, 3)
+		table.attach(total_hours_label, 3, 4, 2, 3)
+
+		vbox.pack_start(table, True, True, 0)
+
 
 		self.connect("destroy", self.destroy)
 
@@ -85,7 +101,9 @@ class HelloWorld(gtk.Window):
 		self.total_hours = total_hours
 		self.total_minutes = total_minutes
 		self.total_seconds = total_seconds
-		self.total = total
+		self.total_seconds_label = total_seconds_label
+		self.total_minutes_label = total_minutes_label
+		self.total_hours_label = total_hours_label
 
 		self.add(vbox)
 		self.show_all()
@@ -98,6 +116,7 @@ class HelloWorld(gtk.Window):
 	def timer(self, widget):
 		if widget.get_active():
 			self.s = time.time()
+			#print self.s
 			global running
 			running = True
 			threading.Thread(target = self.update).start()
@@ -126,10 +145,25 @@ class HelloWorld(gtk.Window):
 				self.total_seconds.append(self.seconds)
 
 				total_s = 0
+				total_m = 0
+				total_h = 0
+
 				for i in self.total_seconds:
-					print i
+					# Find how many minutes in total seconds and append it to total_minutes
+					self.total_minutes.append(int(total_s / 60))
+
+					# Get total seconds in this 'round'
 					total_s = total_s + i
-				self.total.set_text(str(total_s))
+					# Find remainder and display that as the total "seconds"
+					total_s = total_s % 60
+				for i in self.total_minutes:
+					total_m = total_m + i
+				for i in self.total_hours:
+					total_h = total_h + i
+
+				self.total_seconds_label.set_text("Total Seconds \n %0.2f" % total_s)
+				self.total_minutes_label.set_text("Total Minutes \n %0i" % total_m)
+				self.total_hours_label.set_text("Total Hours \n %0i" % total_h)
 				running = False
 				break
 
@@ -138,6 +172,8 @@ class HelloWorld(gtk.Window):
 		hour = show / 3600
 		minutes = (show % 3600) / 60
 		seconds = show - (int(hour) * 3600) - (int(minutes) * 60)
+		tseconds = show
+		#print tseconds
 
 		self.hour = hour
 		self.minutes = minutes
